@@ -79,6 +79,31 @@ final class ClassLoader
         'View' => 'Infrastructure/Entrypoints/Web/Presentation/View.php',
         'Flash' => 'Infrastructure/Entrypoints/Web/Presentation/Flash.php',
 
+        // ---------------- Vuelo (Flight) ----------------
+        // Dominio: Enums
+        'FlightStatusEnum' => 'Domain/Enums/FlightStatusEnum.php',
+
+        // Dominio: Exceptions
+        'InvalidFlightStatusException' => 'Domain/Exceptions/InvalidFlightStatusException.php',
+        'FlightNotFoundException' => 'Domain/Exceptions/FlightNotFoundException.php',
+        'FlightAlreadyExistsException' => 'Domain/Exceptions/FlightAlreadyExistsException.php',
+        'InvalidFlightIdException' => 'Domain/Exceptions/InvalidFlightIdException.php',
+        'InvalidFlightNumberException' => 'Domain/Exceptions/InvalidFlightNumberException.php',
+        'InvalidFlightSeatException' => 'Domain/Exceptions/InvalidFlightSeatException.php',
+        'InvalidFlightPriceException' => 'Domain/Exceptions/InvalidFlightPriceException.php',
+        'InvalidFlightScheduleException' => 'Domain/Exceptions/InvalidFlightScheduleException.php',
+        'InvalidFlightRouteException' => 'Domain/Exceptions/InvalidFlightRouteException.php',
+        'InvalidFlightTextException' => 'Domain/Exceptions/InvalidFlightTextException.php',
+
+        // Dominio: ValueObjects
+        'FlightId' => 'Domain/ValueObjects/FlightId.php',
+        'FlightNumber' => 'Domain/ValueObjects/FlightNumber.php',
+        'FlightSeat' => 'Domain/ValueObjects/FlightSeat.php',
+        'FlightPrice' => 'Domain/ValueObjects/FlightPrice.php',
+        'FlightSchedule' => 'Domain/ValueObjects/FlightSchedule.php',
+        'FlightRoute' => 'Domain/ValueObjects/FlightRoute.php',
+        'FlightText' => 'Domain/ValueObjects/FlightText.php',
+
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 
