@@ -104,6 +104,10 @@ final class ClassLoader
         'FlightRoute' => 'Domain/ValueObjects/FlightRoute.php',
         'FlightText' => 'Domain/ValueObjects/FlightText.php',
 
+        // Dominio: Models y Events
+        'FlightModel' => 'Domain/Models/FlightModel.php',
+        'FlightCreatedDomainEvent' => 'Domain/Events/FlightCreatedDomainEvent.php',
+
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 
