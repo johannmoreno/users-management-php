@@ -138,6 +138,12 @@ final class ClassLoader
         'GetAllFlightsService' => 'Application/Services/GetAllFlightsService.php',
         'DeleteFlightService' => 'Application/Services/DeleteFlightService.php',
 
+        // Infraestructura: Persistencia MySQL
+        'FlightPersistenceDto' => 'Infrastructure/Adapters/Persistence/MySQL/Dto/FlightPersistenceDto.php',
+        'FlightEntity' => 'Infrastructure/Adapters/Persistence/MySQL/Entity/FlightEntity.php',
+        'FlightPersistenceMapper' => 'Infrastructure/Adapters/Persistence/MySQL/Mapper/FlightPersistenceMapper.php',
+        'FlightRepositoryMySQL' => 'Infrastructure/Adapters/Persistence/MySQL/Repository/FlightRepositoryMySQL.php',
+        
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 
