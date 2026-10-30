@@ -108,6 +108,36 @@ final class ClassLoader
         'FlightModel' => 'Domain/Models/FlightModel.php',
         'FlightCreatedDomainEvent' => 'Domain/Events/FlightCreatedDomainEvent.php',
 
+        // Aplicacion: Puertos de salida
+        'SaveFlightPort' => 'Application/Ports/Out/SaveFlightPort.php',
+        'UpdateFlightPort' => 'Application/Ports/Out/UpdateFlightPort.php',
+        'GetFlightByIdPort' => 'Application/Ports/Out/GetFlightByIdPort.php',
+        'GetFlightBySeatPort' => 'Application/Ports/Out/GetFlightBySeatPort.php',
+        'GetAllFlightsPort' => 'Application/Ports/Out/GetAllFlightsPort.php',
+        'DeleteFlightPort' => 'Application/Ports/Out/DeleteFlightPort.php',
+
+        // Aplicacion: Puertos de entrada
+        'CreateFlightUseCase' => 'Application/Ports/In/CreateFlightUseCase.php',
+        'UpdateFlightUseCase' => 'Application/Ports/In/UpdateFlightUseCase.php',
+        'GetFlightByIdUseCase' => 'Application/Ports/In/GetFlightByIdUseCase.php',
+        'GetAllFlightsUseCase' => 'Application/Ports/In/GetAllFlightsUseCase.php',
+        'DeleteFlightUseCase' => 'Application/Ports/In/DeleteFlightUseCase.php',
+
+        // Aplicacion: Commands y Queries
+        'CreateFlightCommand' => 'Application/Services/Dto/Commands/CreateFlightCommand.php',
+        'UpdateFlightCommand' => 'Application/Services/Dto/Commands/UpdateFlightCommand.php',
+        'DeleteFlightCommand' => 'Application/Services/Dto/Commands/DeleteFlightCommand.php',
+        'GetFlightByIdQuery' => 'Application/Services/Dto/Queries/GetFlightByIdQuery.php',
+        'GetAllFlightsQuery' => 'Application/Services/Dto/Queries/GetAllFlightsQuery.php',
+
+        // Aplicacion: Mapper y Services
+        'FlightApplicationMapper' => 'Application/Services/Mappers/FlightApplicationMapper.php',
+        'CreateFlightService' => 'Application/Services/CreateFlightService.php',
+        'UpdateFlightService' => 'Application/Services/UpdateFlightService.php',
+        'GetFlightByIdService' => 'Application/Services/GetFlightByIdService.php',
+        'GetAllFlightsService' => 'Application/Services/GetAllFlightsService.php',
+        'DeleteFlightService' => 'Application/Services/DeleteFlightService.php',
+
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 
