@@ -143,7 +143,14 @@ final class ClassLoader
         'FlightEntity' => 'Infrastructure/Adapters/Persistence/MySQL/Entity/FlightEntity.php',
         'FlightPersistenceMapper' => 'Infrastructure/Adapters/Persistence/MySQL/Mapper/FlightPersistenceMapper.php',
         'FlightRepositoryMySQL' => 'Infrastructure/Adapters/Persistence/MySQL/Repository/FlightRepositoryMySQL.php',
-        
+
+        // Entrypoints Web
+        'CreateFlightWebRequest' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/CreateFlightWebRequest.php',
+        'UpdateFlightWebRequest' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/UpdateFlightWebRequest.php',
+        'FlightResponse' => 'Infrastructure/Entrypoints/Web/Controllers/Dto/FlightResponse.php',
+        'FlightWebMapper' => 'Infrastructure/Entrypoints/Web/Controllers/Mapper/FlightWebMapper.php',
+        'FlightController' => 'Infrastructure/Entrypoints/Web/Controllers/FlightController.php',
+
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 

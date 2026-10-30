@@ -156,4 +156,96 @@ final class DependencyInjection
             self::getUserRepository()
         );
     }
+
+    // ---------------- Vuelo (Flight) ----------------
+
+    public static function getFlightPersistenceMapper(): FlightPersistenceMapper
+    {
+        ClassLoader::loadClass('FlightPersistenceMapper');
+
+        return new FlightPersistenceMapper();
+    }
+
+    public static function getFlightRepository(): FlightRepositoryMySQL
+    {
+        ClassLoader::loadClass('FlightRepositoryMySQL');
+
+        return new FlightRepositoryMySQL(
+            self::getPdo(),
+            self::getFlightPersistenceMapper()
+        );
+    }
+
+    public static function getCreateFlightUseCase(): CreateFlightUseCase
+    {
+        ClassLoader::loadClass('CreateFlightService');
+        $repository = self::getFlightRepository();
+
+        return new CreateFlightService(
+            $repository,
+            $repository
+        );
+    }
+
+    public static function getUpdateFlightUseCase(): UpdateFlightUseCase
+    {
+        ClassLoader::loadClass('UpdateFlightService');
+        $repository = self::getFlightRepository();
+
+        return new UpdateFlightService(
+            $repository,
+            $repository,
+            $repository
+        );
+    }
+
+    public static function getGetFlightByIdUseCase(): GetFlightByIdUseCase
+    {
+        ClassLoader::loadClass('GetFlightByIdService');
+
+        return new GetFlightByIdService(
+            self::getFlightRepository()
+        );
+    }
+
+    public static function getGetAllFlightsUseCase(): GetAllFlightsUseCase
+    {
+        ClassLoader::loadClass('GetAllFlightsService');
+
+        return new GetAllFlightsService(
+            self::getFlightRepository()
+        );
+    }
+
+    public static function getDeleteFlightUseCase(): DeleteFlightUseCase
+    {
+        ClassLoader::loadClass('DeleteFlightService');
+        $repository = self::getFlightRepository();
+
+        return new DeleteFlightService(
+            $repository,
+            $repository
+        );
+    }
+
+    public static function getFlightWebMapper(): FlightWebMapper
+    {
+        ClassLoader::loadClass('FlightWebMapper');
+
+        return new FlightWebMapper();
+    }
+
+    public static function getFlightController(): FlightController
+    {
+        ClassLoader::loadClass('FlightController');
+
+        return new FlightController(
+            self::getCreateFlightUseCase(),
+            self::getUpdateFlightUseCase(),
+            self::getGetFlightByIdUseCase(),
+            self::getGetAllFlightsUseCase(),
+            self::getDeleteFlightUseCase(),
+            self::getFlightWebMapper()
+        );
+    }
 }

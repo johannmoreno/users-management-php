@@ -42,6 +42,34 @@ final class WebRoutes
                 'method' => 'POST',
                 'action' => 'delete',
             ),
+            'flights.create' => array(
+                'method' => 'GET',
+                'action' => 'flights.create',
+            ),
+            'flights.store' => array(
+                'method' => 'POST',
+                'action' => 'flights.store',
+            ),
+            'flights.index' => array(
+                'method' => 'GET',
+                'action' => 'flights.index',
+            ),
+            'flights.show' => array(
+                'method' => 'GET',
+                'action' => 'flights.show',
+            ),
+            'flights.edit' => array(
+                'method' => 'GET',
+                'action' => 'flights.edit',
+            ),
+            'flights.update' => array(
+                'method' => 'POST',
+                'action' => 'flights.update',
+            ),
+            'flights.delete' => array(
+                'method' => 'POST',
+                'action' => 'flights.delete',
+            ),
             'auth.login' => array(
                 'method' => 'GET',
                 'action' => 'login',
