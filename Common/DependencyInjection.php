@@ -248,4 +248,14 @@ final class DependencyInjection
             self::getFlightWebMapper()
         );
     }
+
+
+    public static function getFlightRestController(): FlightRestController
+    {
+        ClassLoader::loadClass('FlightRestController');
+
+        return new FlightRestController(
+            self::getFlightController()
+        );
+    }
 }

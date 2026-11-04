@@ -1,0 +1,402 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API de Vuelos",
+    "version": "1.0.0",
+    "description": "API REST para gestionar vuelos (ejercicio 18). Sigue una arquitectura hexagonal con DDD.\n\n**Autenticación:** todas las rutas, salvo `/health`, exigen el encabezado `X-API-Key`. Pulsa el botón **Authorize**, escribe la clave que definiste en `API_KEY` y pruébala con **Try it out**.\n\n**Formato de error:** todos los errores responden `{ \"error\": { \"status\", \"code\", \"message\", \"details\" } }`."
+  },
+  "servers": [{"url": "../api.php", "description": "Servidor actual"}],
+  "tags": [
+    {"name": "Vuelos", "description": "Operaciones CRUDL sobre vuelos."},
+    {"name": "Sistema", "description": "Estado del servicio."}
+  ],
+  "security": [{"ApiKeyAuth": []}],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Sistema"],
+        "summary": "Estado del servicio",
+        "description": "No requiere clave. Sirve para comprobar que el servicio está vivo (Docker, Render, etc.).",
+        "operationId": "health",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "El servicio está vivo.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}}}
+          }
+        }
+      }
+    },
+    "/flights": {
+      "get": {
+        "tags": ["Vuelos"],
+        "summary": "Listar vuelos",
+        "description": "Devuelve todos los vuelos ordenados por fecha de salida.",
+        "operationId": "listFlights",
+        "responses": {
+          "200": {
+            "description": "Lista de vuelos.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightList"}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "500": {"$ref": "#/components/responses/ServerError"},
+          "503": {"$ref": "#/components/responses/NotConfigured"}
+        }
+      },
+      "post": {
+        "tags": ["Vuelos"],
+        "summary": "Crear un vuelo",
+        "description": "Crea un vuelo en estado `PROGRAMADO`. El `id` lo genera el servidor.",
+        "operationId": "createFlight",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightInput"}}}},
+        "responses": {
+          "201": {
+            "description": "Vuelo creado.",
+            "headers": {"Location": {"description": "Dirección del vuelo creado.", "schema": {"type": "string"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "409": {"$ref": "#/components/responses/SeatTaken"},
+          "422": {"$ref": "#/components/responses/Validation"},
+          "500": {"$ref": "#/components/responses/ServerError"},
+          "503": {"$ref": "#/components/responses/NotConfigured"}
+        }
+      }
+    },
+    "/flights/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identificador (UUID) del vuelo.",
+          "schema": {"type": "string", "format": "uuid"},
+          "example": "8f1c2a3e-5b7d-4c9a-9e10-1a2b3c4d5e6f"
+        }
+      ],
+      "get": {
+        "tags": ["Vuelos"],
+        "summary": "Consultar un vuelo",
+        "operationId": "getFlight",
+        "responses": {
+          "200": {
+            "description": "El vuelo.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightResponse"}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/FlightNotFound"},
+          "500": {"$ref": "#/components/responses/ServerError"},
+          "503": {"$ref": "#/components/responses/NotConfigured"}
+        }
+      },
+      "put": {
+        "tags": ["Vuelos"],
+        "summary": "Actualizar un vuelo",
+        "description": "Reemplaza **todos** los datos editables del vuelo (incluido `status`) y conserva su `id`. Un vuelo puede conservar su propio puesto, pero no tomar el de otro.",
+        "operationId": "updateFlight",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightUpdate"}}}},
+        "responses": {
+          "200": {
+            "description": "Vuelo actualizado.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/FlightResponse"}}}
+          },
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/FlightNotFound"},
+          "409": {"$ref": "#/components/responses/SeatTaken"},
+          "422": {"$ref": "#/components/responses/Validation"},
+          "500": {"$ref": "#/components/responses/ServerError"},
+          "503": {"$ref": "#/components/responses/NotConfigured"}
+        }
+      },
+      "delete": {
+        "tags": ["Vuelos"],
+        "summary": "Eliminar un vuelo",
+        "operationId": "deleteFlight",
+        "responses": {
+          "204": {"description": "Vuelo eliminado. Sin cuerpo."},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/FlightNotFound"},
+          "500": {"$ref": "#/components/responses/ServerError"},
+          "503": {"$ref": "#/components/responses/NotConfigured"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Clave definida en la variable de entorno `API_KEY`."
+      }
+    },
+    "schemas": {
+      "FlightInput": {
+        "type": "object",
+        "required": [
+          "flight_number",
+          "airline",
+          "travel_agency",
+          "customer",
+          "seat",
+          "aircraft",
+          "pilot",
+          "departure_airport",
+          "arrival_airport",
+          "purchase_date",
+          "departure_date",
+          "arrival_date",
+          "price"
+        ],
+        "properties": {
+          "flight_number": {
+            "type": "string",
+            "pattern": "^([A-Za-z0-9]{2}|[A-Za-z]{3})[0-9]{1,4}$",
+            "description": "Número de vuelo: código de aerolínea (2 caracteres IATA o 3 letras ICAO) y de 1 a 4 dígitos. Se guarda en mayúsculas.",
+            "example": "AV8523"
+          },
+          "airline": {"type": "string", "maxLength": 100, "description": "Aerolínea.", "example": "Avianca"},
+          "travel_agency": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Agencia de viajes que vendió el tiquete.",
+            "example": "Viajes Caribe"
+          },
+          "customer": {"type": "string", "maxLength": 100, "description": "Nombre del cliente.", "example": "María Pérez"},
+          "seat": {
+            "type": "string",
+            "pattern": "^[0-9]{1,2}[A-Ka-k]$",
+            "description": "Puesto: fila (1 o 2 dígitos) y letra de la A a la K. Un mismo puesto no se puede vender dos veces para el mismo número de vuelo y la misma fecha de salida. Se guarda en mayúsculas.",
+            "example": "12A"
+          },
+          "aircraft": {
+            "type": "string",
+            "maxLength": 50,
+            "description": "Avión (máximo 50 caracteres).",
+            "example": "Airbus A320"
+          },
+          "pilot": {"type": "string", "maxLength": 100, "description": "Piloto.", "example": "Carlos Gómez"},
+          "departure_airport": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Aeropuerto de salida. Debe ser distinto al de llegada.",
+            "example": "Cartagena (CTG)"
+          },
+          "arrival_airport": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Aeropuerto de llegada. Debe ser distinto al de salida.",
+            "example": "Bogotá (BOG)"
+          },
+          "purchase_date": {
+            "type": "string",
+            "description": "Fecha de compra. No puede ser posterior a la salida. Formatos: `AAAA-MM-DDTHH:MM`, `AAAA-MM-DD HH:MM` o con segundos.",
+            "example": "2026-11-01T10:00"
+          },
+          "departure_date": {
+            "type": "string",
+            "description": "Fecha de salida. Formatos: `AAAA-MM-DDTHH:MM`, `AAAA-MM-DD HH:MM` o con segundos.",
+            "example": "2026-12-10T08:00"
+          },
+          "arrival_date": {
+            "type": "string",
+            "description": "Fecha de llegada. Debe ser posterior a la salida. Formatos: `AAAA-MM-DDTHH:MM`, `AAAA-MM-DD HH:MM` o con segundos.",
+            "example": "2026-12-10T10:30"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "description": "Valor del vuelo. Debe ser mayor que cero. Se guarda con 2 decimales.",
+            "example": 450000
+          }
+        }
+      },
+      "FlightUpdate": {
+        "allOf": [
+          {"$ref": "#/components/schemas/FlightInput"},
+          {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["PROGRAMADO", "RETRASADO", "EN_VUELO", "ATERRIZADO", "CANCELADO"],
+                "description": "Estado del vuelo.",
+                "example": "RETRASADO"
+              }
+            }
+          }
+        ]
+      },
+      "Flight": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "format": "uuid", "description": "Identificador generado por el servidor."},
+          "purchase_date": {"type": "string", "description": "Fecha y hora con formato `AAAA-MM-DD HH:MM:SS`."},
+          "departure_date": {"type": "string", "description": "Fecha y hora con formato `AAAA-MM-DD HH:MM:SS`."},
+          "arrival_date": {"type": "string", "description": "Fecha y hora con formato `AAAA-MM-DD HH:MM:SS`."},
+          "travel_agency": {"type": "string"},
+          "airline": {"type": "string"},
+          "flight_number": {"type": "string"},
+          "status": {
+            "type": "string",
+            "enum": ["PROGRAMADO", "RETRASADO", "EN_VUELO", "ATERRIZADO", "CANCELADO"],
+            "description": "Estado del vuelo."
+          },
+          "price": {"type": "string", "description": "Valor con 2 decimales, como texto."},
+          "customer": {"type": "string"},
+          "seat": {"type": "string"},
+          "aircraft": {"type": "string"},
+          "departure_airport": {"type": "string"},
+          "arrival_airport": {"type": "string"},
+          "pilot": {"type": "string"}
+        },
+        "example": {
+          "id": "8f1c2a3e-5b7d-4c9a-9e10-1a2b3c4d5e6f",
+          "purchase_date": "2026-11-01 10:00:00",
+          "departure_date": "2026-12-10 08:00:00",
+          "arrival_date": "2026-12-10 10:30:00",
+          "travel_agency": "Viajes Caribe",
+          "airline": "Avianca",
+          "flight_number": "AV8523",
+          "status": "PROGRAMADO",
+          "price": "450000.00",
+          "customer": "María Pérez",
+          "seat": "12A",
+          "aircraft": "Airbus A320",
+          "departure_airport": "Cartagena (CTG)",
+          "arrival_airport": "Bogotá (BOG)",
+          "pilot": "Carlos Gómez"
+        }
+      },
+      "FlightResponse": {"type": "object", "properties": {"data": {"$ref": "#/components/schemas/Flight"}}},
+      "FlightList": {
+        "type": "object",
+        "properties": {
+          "data": {"type": "array", "items": {"$ref": "#/components/schemas/Flight"}},
+          "count": {"type": "integer", "description": "Cantidad de vuelos devueltos.", "example": 1}
+        }
+      },
+      "Health": {"type": "object", "properties": {"status": {"type": "string", "example": "ok"}}},
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["status", "code", "message"],
+            "properties": {
+              "status": {"type": "integer", "description": "Código HTTP."},
+              "code": {"type": "string", "description": "Código corto para programas."},
+              "message": {"type": "string", "description": "Mensaje para personas."},
+              "details": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "description": "Detalle por campo (solo en errores de validación)."
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "El cuerpo no es un JSON válido, está vacío o no es un objeto.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {"error": {"status": 400, "code": "bad_request", "message": "El cuerpo no es un JSON válido."}}
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Falta la clave o es incorrecta.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "error": {
+                "status": 401,
+                "code": "unauthorized",
+                "message": "API key ausente o inválida. Envía el encabezado X-API-Key."
+              }
+            }
+          }
+        }
+      },
+      "FlightNotFound": {
+        "description": "No existe un vuelo con ese id.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "error": {
+                "status": 404,
+                "code": "flight_not_found",
+                "message": "No se encontró el vuelo con id 8f1c2a3e-5b7d-4c9a-9e10-1a2b3c4d5e6f."
+              }
+            }
+          }
+        }
+      },
+      "SeatTaken": {
+        "description": "Ese puesto ya está vendido para el mismo vuelo y la misma fecha de salida.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "error": {
+                "status": 409,
+                "code": "seat_already_taken",
+                "message": "El puesto 12A del vuelo AV8523 con salida 2026-12-10 08:00:00 ya está ocupado."
+              }
+            }
+          }
+        }
+      },
+      "Validation": {
+        "description": "Faltan campos o alguna regla de negocio no se cumple (formato del vuelo o del puesto, fechas, aeropuertos, valor, estado).",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "error": {
+                "status": 422,
+                "code": "validation_error",
+                "message": "Hay campos faltantes o inválidos.",
+                "details": {"flight_number": "El número de vuelo es obligatorio."}
+              }
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Error inesperado. No se expone el detalle interno.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {"error": {"status": 500, "code": "internal_error", "message": "Error interno del servidor."}}
+          }
+        }
+      },
+      "NotConfigured": {
+        "description": "El servidor no tiene definida la variable `API_KEY`.",
+        "content": {
+          "application/json": {
+            "schema": {"$ref": "#/components/schemas/Error"},
+            "example": {
+              "error": {
+                "status": 503,
+                "code": "api_key_not_configured",
+                "message": "La API no tiene una clave configurada. Define API_KEY en el entorno."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

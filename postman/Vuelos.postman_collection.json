@@ -1,0 +1,340 @@
+{
+  "info": {
+    "name": "API de Vuelos - Ejercicio 18",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pruebas de la API REST de vuelos.\n\n1. Importa esta coleccion en Postman.\n2. En la pestana Variables escribe tu clave en `apiKey` (valor actual) y ajusta `baseUrl` si hace falta.\n3. Ejecuta la coleccion con Run. Las carpetas 1 y 2 van en orden; la 3 prueba los errores.\n\nEl texto entre parentesis del nombre de cada peticion indica lo esperado: `(409 seat_already_taken)` es estado HTTP 409 y `error.code` igual a `seat_already_taken`. Un script comun a toda la coleccion lo comprueba."
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {"key": "key", "value": "X-API-Key", "type": "string"},
+      {"key": "value", "value": "{{apiKey}}", "type": "string"},
+      {"key": "in", "value": "header", "type": "string"}
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Comprobacion comun a todas las peticiones: el nombre indica lo esperado, por ejemplo",
+          "// \"(409 seat_already_taken)\" = estado HTTP 409 y error.code 'seat_already_taken'.",
+          "const expected = pm.info.requestName.match(/\\((\\d{3})(?: ([a-z_]+))?\\)/);",
+          "if (expected) {",
+          "    pm.test('Responde ' + expected[1], function () { pm.response.to.have.status(Number(expected[1])); });",
+          "    if (expected[2]) {",
+          "        pm.test(\"El error se identifica con el codigo '\" + expected[2] + \"'\", function () {",
+          "            pm.expect(pm.response.json().error.code).to.eql(expected[2]);",
+          "        });",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8000/users-management-php/public/api.php", "type": "string"},
+    {"key": "apiKey", "value": "", "type": "string"},
+    {"key": "flightId", "value": "", "type": "string"},
+    {"key": "flightNumber", "value": "", "type": "string"},
+    {"key": "seat", "value": "", "type": "string"}
+  ],
+  "item": [
+    {
+      "name": "1. Sistema",
+      "item": [
+        {
+          "name": "Estado del servicio (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test('El servicio esta vivo', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"]}
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"]},
+            "auth": {"type": "noauth"},
+            "description": "No necesita clave."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. CRUDL de vuelos (ejecutar en orden)",
+      "item": [
+        {
+          "name": "1. Crear vuelo (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Datos unicos por ejecucion, para no chocar con vuelos de pruebas anteriores.",
+                  "const row = Math.floor(Math.random() * 99) + 1;",
+                  "pm.collectionVariables.set('seat', row + 'ABCDEFGHIJK'[Math.floor(Math.random() * 11)]);",
+                  "pm.collectionVariables.set('flightNumber', 'QA' + (Math.floor(Math.random() * 9000) + 1000));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const flight = pm.response.json().data || {};",
+                  "pm.test('El vuelo nace PROGRAMADO con un id UUID', function () {",
+                  "    pm.expect(flight.status).to.eql('PROGRAMADO');",
+                  "    pm.expect(flight.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);",
+                  "});",
+                  "pm.test('Incluye el encabezado Location', function () { pm.expect(pm.response.headers.has('Location')).to.be.true; });",
+                  "pm.collectionVariables.set('flightId', flight.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"{{flightNumber}}\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"{{seat}}\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "description": "Crea un vuelo con numero y puesto aleatorios (se generan en el pre-request) y guarda su id en flightId."
+          }
+        },
+        {
+          "name": "2. Crear vuelo con puesto repetido (409 seat_already_taken)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"{{flightNumber}}\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"{{seat}}\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "description": "Repite el mismo vuelo: el puesto ya esta vendido para ese numero y esa fecha."
+          }
+        },
+        {
+          "name": "3. Listar vuelos (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('count coincide y la lista incluye el vuelo creado', function () {",
+                  "    pm.expect(json.count).to.eql(json.data.length);",
+                  "    pm.expect(json.data.map(function (f) { return f.id; })).to.include(pm.collectionVariables.get('flightId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]}}
+        },
+        {
+          "name": "4. Consultar vuelo por id (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Devuelve el vuelo pedido', function () { pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('flightId')); });"]
+              }
+            }
+          ],
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/flights/{{flightId}}", "host": ["{{baseUrl}}"], "path": ["flights", "{{flightId}}"]}}
+        },
+        {
+          "name": "5. Actualizar vuelo (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const flight = pm.response.json().data || {};",
+                  "pm.test('Estado RETRASADO, valor con 2 decimales y mismo id', function () {",
+                  "    pm.expect(flight.status).to.eql('RETRASADO');",
+                  "    pm.expect(flight.price).to.eql('500000.50');",
+                  "    pm.expect(flight.id).to.eql(pm.collectionVariables.get('flightId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights/{{flightId}}", "host": ["{{baseUrl}}"], "path": ["flights", "{{flightId}}"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"{{flightNumber}}\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"{{seat}}\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T11:00\", \"price\": 500000.5, \"status\": \"RETRASADO\"}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "description": "Reemplaza todos los datos editables, incluido el estado."
+          }
+        },
+        {
+          "name": "6. Eliminar vuelo (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": ["pm.test('No devuelve cuerpo', function () { pm.expect(pm.response.text()).to.eql(''); });"]}
+            }
+          ],
+          "request": {"method": "DELETE", "header": [], "url": {"raw": "{{baseUrl}}/flights/{{flightId}}", "host": ["{{baseUrl}}"], "path": ["flights", "{{flightId}}"]}}
+        },
+        {
+          "name": "7. Consultar el vuelo eliminado (404 flight_not_found)",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/flights/{{flightId}}", "host": ["{{baseUrl}}"], "path": ["flights", "{{flightId}}"]}}
+        }
+      ]
+    },
+    {
+      "name": "3. Validaciones y errores",
+      "item": [
+        {
+          "name": "Sin API key (401 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "auth": {"type": "noauth"},
+            "description": "No envia el encabezado X-API-Key."
+          }
+        },
+        {
+          "name": "API key incorrecta (401 unauthorized)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {"key": "key", "value": "X-API-Key", "type": "string"},
+                {"key": "value", "value": "clave-incorrecta", "type": "string"},
+                {"key": "in", "value": "header", "type": "string"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "JSON invalido (400 bad_request)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {"mode": "raw", "raw": "{\"hola\"", "options": {"raw": {"language": "json"}}}
+          }
+        },
+        {
+          "name": "Campos faltantes (422 validation_error)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Detalla el campo faltante', function () { pm.expect(pm.response.json().error.details.flight_number).to.include('obligatorio'); });"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {"mode": "raw", "raw": "{\"airline\": \"Avianca\"}", "options": {"raw": {"language": "json"}}}
+          }
+        },
+        {
+          "name": "Puesto con formato invalido (422 validation_error)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"AV8523\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"ZZ\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            }
+          }
+        },
+        {
+          "name": "Llegada anterior a la salida (422 validation_error)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"AV8523\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"12A\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T07:00\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            }
+          }
+        },
+        {
+          "name": "Aeropuertos iguales (422 validation_error)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"AV8523\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"12A\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"cartagena (ctg)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            }
+          }
+        },
+        {
+          "name": "Valor negativo (422 validation_error)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"AV8523\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"12A\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": -5}",
+              "options": {"raw": {"language": "json"}}
+            }
+          }
+        },
+        {
+          "name": "Ruta inexistente (404 route_not_found)",
+          "request": {"method": "GET", "header": [], "url": {"raw": "{{baseUrl}}/otra-cosa", "host": ["{{baseUrl}}"], "path": ["otra-cosa"]}}
+        },
+        {
+          "name": "Metodo no permitido (405 method_not_allowed)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('El encabezado Allow lista los metodos validos', function () { pm.expect(pm.response.headers.get('Allow')).to.eql('GET, POST'); });"]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {"raw": "{{baseUrl}}/flights", "host": ["{{baseUrl}}"], "path": ["flights"]},
+            "body": {
+              "mode": "raw",
+              "raw": "{\"flight_number\": \"AV8523\", \"airline\": \"Avianca\", \"travel_agency\": \"Viajes Caribe\", \"customer\": \"Maria Perez\", \"seat\": \"12A\", \"aircraft\": \"Airbus A320\", \"pilot\": \"Carlos Gomez\", \"departure_airport\": \"Cartagena (CTG)\", \"arrival_airport\": \"Bogota (BOG)\", \"purchase_date\": \"2026-11-01T10:00\", \"departure_date\": \"2026-12-10T08:00\", \"arrival_date\": \"2026-12-10T10:30\", \"price\": 450000}",
+              "options": {"raw": {"language": "json"}}
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

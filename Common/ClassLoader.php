@@ -151,6 +151,12 @@ final class ClassLoader
         'FlightWebMapper' => 'Infrastructure/Entrypoints/Web/Controllers/Mapper/FlightWebMapper.php',
         'FlightController' => 'Infrastructure/Entrypoints/Web/Controllers/FlightController.php',
 
+        // Entrypoints REST
+        'JsonResponse' => 'Infrastructure/Entrypoints/Rest/JsonResponse.php',
+        'ApiException' => 'Infrastructure/Entrypoints/Rest/ApiException.php',
+        'ApiErrorHandler' => 'Infrastructure/Entrypoints/Rest/ApiErrorHandler.php',
+        'FlightRestController' => 'Infrastructure/Entrypoints/Rest/Controllers/FlightRestController.php',
+
         'DependencyInjection' => 'Common/DependencyInjection.php',
     );
 

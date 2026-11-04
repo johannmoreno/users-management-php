@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>API de Vuelos - Documentación</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <style>
+        body { margin: 0; }
+        #error { display: none; margin: 24px; padding: 16px; border: 1px solid #c0392b; color: #c0392b; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<div id="error"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+    // Se carga openapi.json y se apunta "servers" a la API del mismo sitio,
+    // de modo que funcione igual en local, en Docker y en la nube.
+    fetch('openapi.json')
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('No se pudo cargar openapi.json (HTTP ' + response.status + ').');
+            }
+            return response.json();
+        })
+        .then(function (spec) {
+            spec.servers = [{
+                url: new URL('../api.php', window.location.href).href,
+                description: 'Servidor actual'
+            }];
+
+            window.ui = SwaggerUIBundle({
+                spec: spec,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                persistAuthorization: true,
+                docExpansion: 'list'
+            });
+        })
+        .catch(function (error) {
+            var box = document.getElementById('error');
+            box.textContent = error.message;
+            box.style.display = 'block';
+
+        });
+</script>
+</body>
+</html>
