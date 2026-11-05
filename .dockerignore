@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+postman
+docker-compose*.yml
+Dockerfile
+.dockerignore
+README.md
+*.log
