@@ -383,7 +383,24 @@ try {
             throw new RuntimeException('Acción no soportada.');
     }
 } catch (Throwable $exception) {
-    $msg = $exception->getMessage();
+    $isExpectedError = $exception instanceof InvalidArgumentException
+        || $exception instanceof DomainException
+        || $exception instanceof InvalidCredentialsException
+        || $exception instanceof EmailSenderException;
+
+    if ($isExpectedError) {
+        $msg = $exception->getMessage();
+    } else {
+        error_log(sprintf(
+            '[WEB] %s: %s en %s:%d',
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine()
+        ));
+        $msg = 'Ocurrió un error inesperado. Inténtalo de nuevo más tarde.';
+    }
+
     Flash::setMessage($msg);
 
     switch ($route) {
