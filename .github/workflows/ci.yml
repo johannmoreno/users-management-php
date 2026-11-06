@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Revisión de sintaxis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+
+      - name: Revisar la sintaxis de todos los archivos PHP
+        run: |
+          errors=0
+          while IFS= read -r -d '' file; do
+            if ! php -l "$file" > /dev/null; then
+              errors=$((errors + 1))
+            fi
+          done < <(find . -name "*.php" -not -path "./.git/*" -print0)
+          echo "Archivos PHP con errores: $errors"
+          test "$errors" -eq 0
+
+      - name: Validar los JSON de la API (Swagger y Postman)
+        run: |
+          php -r 'foreach (["public/docs/openapi.json", "postman/Vuelos.postman_collection.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "JSON válido: $f\n"; }'
+
+  docker-tests:
+    name: Docker Compose y pruebas de Postman
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 15
+    env:
+      # Clave solo para esta prueba automática; no protege nada real.
+      API_KEY: clave-solo-para-ci
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Comprobar que existe el script de la base de datos
+        run: test -f Infrastructure/Adapters/Persistence/MySQL/Database/mysql/database.sql
+
+      - name: Construir y levantar los contenedores
+        run: docker compose up -d --build --wait --wait-timeout 240
+
+      - name: Estado de los contenedores
+        run: docker compose ps
+
+      - name: Pruebas de humo
+        run: |
+          curl -fsS http://localhost:8080/public/api.php/health
+          echo
+          curl -fsS -o /dev/null "http://localhost:8080/public/index.php?route=auth.login"
+          curl -fsS -o /dev/null http://localhost:8080/public/docs/index.html
+          curl -fsS -o /dev/null http://localhost:8080/public/docs/openapi.json
+          echo "Pruebas de humo correctas"
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar newman (ejecutor de Postman)
+        run: npm install -g newman
+
+      - name: Ejecutar la colección de Postman
+        run: >
+          newman run postman/Vuelos.postman_collection.json
+          --env-var "baseUrl=http://localhost:8080/public/api.php"
+          --env-var "apiKey=${API_KEY}"
+
+      - name: Mostrar los registros si algo falló
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Apagar los contenedores
+        if: always()
+        run: docker compose down -v
