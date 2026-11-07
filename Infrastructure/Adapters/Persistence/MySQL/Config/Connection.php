@@ -10,6 +10,7 @@ final class Connection
     private string $username;
     private string $password;
     private string $charset;
+    private string $sslCaPath;
 
     public function __construct(
         string $host,
@@ -17,7 +18,8 @@ final class Connection
         string $database,
         string $username,
         string $password,
-        string $charset = 'utf8mb4'
+        string $charset = 'utf8mb4',
+        string $sslCaPath = ''
     ) {
         $this->host = $host;
         $this->port = $port;
@@ -25,6 +27,7 @@ final class Connection
         $this->username = $username;
         $this->password = $password;
         $this->charset = $charset;
+        $this->sslCaPath = $sslCaPath;
     }
 
     public function createPdo(): PDO
@@ -37,16 +40,20 @@ final class Connection
             $this->charset
         );
 
-        $pdo = new PDO(
-            $dsn,
-            $this->username,
-            $this->password,
-            array(
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            )
+        $options = array(
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
         );
+
+        // Bases de datos en la nube (Aiven, etc.) exigen conexión cifrada.
+        // Si se indica el certificado de la autoridad (CA), se activa SSL.
+        if ($this->sslCaPath !== '') {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $this->sslCaPath;
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+        }
+
+        $pdo = new PDO($dsn, $this->username, $this->password, $options);
 
         return $pdo;
     }

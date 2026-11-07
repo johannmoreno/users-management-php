@@ -23,8 +23,24 @@ final class DependencyInjection
             database: EnvLoader::get('DB_DATABASE', 'crud_usuarios'),
             username: EnvLoader::get('DB_USERNAME', 'root'),
             password: EnvLoader::get('DB_PASSWORD', ''),
-            charset: EnvLoader::get('DB_CHARSET', 'utf8mb4')
+            charset: EnvLoader::get('DB_CHARSET', 'utf8mb4'),
+            sslCaPath: self::resolveSslCaPath(EnvLoader::get('DB_SSL_CA', ''))
         );
+    }
+
+    /**
+     * Convierte la ruta del certificado CA (DB_SSL_CA) en una ruta absoluta.
+     * Si es relativa, se toma desde la raíz del proyecto. Vacío = sin SSL.
+     */
+    private static function resolveSslCaPath(string $path): string
+    {
+        if ($path === '') {
+            return '';
+        }
+
+        $isAbsolute = str_starts_with($path, '/') || preg_match('#^[A-Za-z]:#', $path) === 1;
+
+        return $isAbsolute ? $path : dirname(__DIR__) . '/' . $path;
     }
 
     public static function getPdo(): PDO
