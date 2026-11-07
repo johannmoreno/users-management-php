@@ -10,6 +10,10 @@ CREATE DATABASE IF NOT EXISTS crud_usuarios
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
+-- 2. Usuario de BD solicitado en la guia (opcional en local: puedes usar root)
+CREATE USER IF NOT EXISTS 'Estudiante'@'%' IDENTIFIED BY 'Developer';
+GRANT ALL PRIVILEGES ON crud_usuarios.* TO 'Estudiante'@'%';
+FLUSH PRIVILEGES;
 
 USE crud_usuarios;
 
